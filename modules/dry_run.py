@@ -26,7 +26,7 @@ def print_manifest(changes: list) -> None:
 def save_manifest(changes: list, log_dir: str, run_id: str) -> str:
     """Save the change manifest as a JSON file and return its path."""
     os.makedirs(log_dir, exist_ok=True)
-    timestamp = datetime.datetime.utcnow().isoformat()
+    timestamp = datetime.datetime.now(datetime.timezone.utc).isoformat()
     path = os.path.join(log_dir, f"manifest_{run_id}.json")
     data = {
         "run_id": run_id,

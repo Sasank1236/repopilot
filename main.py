@@ -99,7 +99,7 @@ def main():
 
     repo_root = os.path.abspath(args.repo)
     if args.rollback:
-       from modules.code_modifier import CodeModificationEngine
+       modifier = CodeModificationEngine(repo_root=repo_root, backup_dir="backups")
        modifier = CodeModificationEngine(backup_dir="backups")
        success = modifier.git_stash_pop(repo_root)
        sys.exit(0 if success else 1)

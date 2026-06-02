@@ -171,17 +171,25 @@ class CodeModificationEngine:
     def git_stash_before_apply(self, repo_root: str) -> bool:
         """Stash current working state before agent applies changes."""
         import subprocess
-        result = subprocess.run(
+
+        # Check if there's anything to stash
+        check = subprocess.run(
             ["git", "stash", "push", "-m", "repopilot-pre-agent-state"],
             cwd=repo_root,
             capture_output=True,
             text=True,
         )
-        if result.returncode == 0:
-            print("[Rollback] Git stash saved. Run with --rollback to undo.")
-        else:
-            print(f"[Rollback] Warning: git stash failed — {result.stderr.strip()}")
-        return result.returncode == 0
+        if check.returncode != 0:
+            print(f"[Rollback] Warning: git stash failed — {check.stderr.strip()}")
+            return False
+
+        # git stash exits 0 even on a clean tree — detect that case
+        if "No local changes to save" in check.stdout:
+            print("[Rollback] Nothing to stash — working tree is clean.")
+            return False
+
+        print("[Rollback] Git stash saved. Run with --rollback to undo.")
+        return True
 
     def git_stash_pop(self, repo_root: str) -> bool:
         """Restore the pre-agent state via git stash pop."""
