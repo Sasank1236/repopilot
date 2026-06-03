@@ -10,6 +10,7 @@ Usage:
 """
 
 import argparse
+from html import parser
 import os
 import sys
 
@@ -83,6 +84,8 @@ Examples:
                         help="Directory for file backups (default: backups/ inside repo)")
     parser.add_argument("--quiet", action="store_true",
                         help="Suppress verbose output")
+    parser.add_argument("--dry-run", "-d", action="store_true",help="Preview changes without applying them. Saves a manifest to logs/.")
+    parser.add_argument("--rollback",action="store_true",help="Undo the last agent run by popping the git stash.")
 
     # API key
     parser.add_argument("--api-key", default=None,
@@ -95,6 +98,11 @@ def main():
     args = parse_args()
 
     repo_root = os.path.abspath(args.repo)
+    if args.rollback:
+       modifier = CodeModificationEngine(repo_root=repo_root, backup_dir="backups")
+       modifier = CodeModificationEngine(backup_dir="backups")
+       success = modifier.git_stash_pop(repo_root)
+       sys.exit(0 if success else 1)
     if not os.path.isdir(repo_root):
         print(f"ERROR: Repository path does not exist: {repo_root}", file=sys.stderr)
         sys.exit(1)
@@ -102,6 +110,7 @@ def main():
     config = AgentConfig(
         repo_root=repo_root,
         task=args.task,
+        dry_run=args.dry_run,
 
         # Execution
         test_runner=args.runner,

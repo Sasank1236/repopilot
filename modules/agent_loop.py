@@ -37,6 +37,7 @@ from modules.logger import AgentLogger, IterationRecord
 class AgentConfig:
     repo_root: str
     task: str
+    dry_run: bool = False
 
     # Execution
     test_runner: str = "pytest"            # pytest | npm_test | go | cargo | ...
@@ -273,6 +274,39 @@ class AutonomousAgent:
                 else:
                     valid_changes = llm_resp.changes
 
+                from modules.dry_run import print_manifest, save_manifest, ask_confirmation
+
+                changes_list = [
+                    c.__dict__ if hasattr(c, '__dict__') else c
+                    for c in llm_resp.changes
+                ]
+
+                print_manifest(changes_list)
+
+                if self.config.dry_run:
+                    manifest_path = save_manifest(changes_list, self.config.log_dir, self.run_id)
+                    print(f"\n[DRY RUN] No files were modified.")
+                    print(f"[DRY RUN] Manifest saved to: {manifest_path}")
+                    return AgentRunResult(
+                        outcome="dry_run",
+                        run_id=self.run_id,
+                        iterations_used=iteration,
+                        final_message="Dry run complete. Review the manifest before applying.",
+                        branch_name=None,
+                        pr_url=None,
+                    )
+
+                if not ask_confirmation(len(llm_resp.changes)):
+                    return AgentRunResult(
+                        outcome="aborted",
+                        run_id=self.run_id,
+                        iterations_used=iteration,
+                        final_message="Aborted by user at confirmation prompt.",
+                        branch_name=None,
+                        pr_url=None,
+                    )
+
+                self.modifier.git_stash_before_apply(self.config.repo_root)
                 apply_results = self.modifier.apply_changes(valid_changes)
                 self.logger.log_apply_results(apply_results)
                 last_changes = valid_changes
