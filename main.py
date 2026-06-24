@@ -10,7 +10,6 @@ Usage:
 """
 
 import argparse
-from html import parser
 import os
 import sys
 
@@ -18,6 +17,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from modules.agent_loop import AutonomousAgent, AgentConfig
+from modules.code_modifier import CodeModificationEngine
 
 
 def parse_args() -> argparse.Namespace:
@@ -100,7 +100,6 @@ def main():
     repo_root = os.path.abspath(args.repo)
     if args.rollback:
        modifier = CodeModificationEngine(repo_root=repo_root, backup_dir="backups")
-       modifier = CodeModificationEngine(backup_dir="backups")
        success = modifier.git_stash_pop(repo_root)
        sys.exit(0 if success else 1)
     if not os.path.isdir(repo_root):
